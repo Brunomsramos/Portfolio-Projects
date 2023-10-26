@@ -1,0 +1,306 @@
+-- Let's select data to be used. I also use this data to then Ctrl+C & Ctrl+V. For ease of use. 
+
+SELECT
+Location,
+date,
+population,
+total_cases,
+new_cases,
+total_deaths,
+population,
+FROM `my-project-04082023.Case_Study_4.Covid_Deaths`
+ORDER BY 1,2 -- Order by 1,2 organizes the result by the column 1 (location, asc) and 2 (date,asc)
+
+-- ANALYSIS:
+-- Because I wanted to search for Portugal, let's writte a query to find how "Portugal" was spelled.
+
+SELECT DISTINCT
+location
+FROM `my-project-04082023.Case_Study_4.Covid_Deaths`
+WHERE location LIKE '%gal%'
+
+-- We can see there is Portugal and Senegal, so going forward I can just search for "Portugal"
+-- Performing calculations. Let's find out how many of the cases turned into deaths (Death_Percentage). So, Total Cases vs Total Deaths.
+
+SELECT
+Location,
+date,
+population,
+total_cases,
+total_deaths,
+(total_deaths/total_cases)*100 as Death_percentage
+FROM`my-project-04082023.Case_Study_4.Covid_Deaths`
+WHERE location = "Portugal"
+ORDER BY Death_percentage DESC
+
+-- Result: Highest ever death percentage was at 2020-06-02 with 32895 Cases, 1436 Deaths and a Death Percentage of 4.36%.
+-- Analysis: Although relatively low Death_percentage, the amount of cases and deaths were also on the low side. This was likely when the virus stated it's "global journey". Still, for a population of around 10M, this was obviously dangerous.
+
+
+-- For curiosity, let's see where were the highest cases compared to total population - Case_Percentage. 
+-- Sort of gives us an ideia of how much it spread in that specific country
+
+SELECT
+location,
+-- date,
+population,
+-- total_cases,
+-- total_deaths,
+MAX(total_cases) as Highest_Infection_Count,
+MAX((total_cases/population))*100 as Case_Percentage
+FROM`my-project-04082023.Case_Study_4.Covid_Deaths`
+GROUP BY location, population
+ORDER BY Case_Percentage DESC
+
+-- Now let's look at countries with Highest Percentage Death per Population. Meaning, the Contries in which the highest percent of people died from the total population.
+
+SELECT
+location,
+-- date,
+population,
+-- total_cases,
+-- total_deaths,
+MAX(cast(total_deaths as int)) as Death_Percentage,
+MAX((total_deaths/population))*100 as Death_Percentage_of_total_pop
+FROM`my-project-04082023.Case_Study_4.Covid_Deaths`
+GROUP BY location, population
+ORDER BY Death_Percentage_of_total_pop DESC
+
+-- About now I found out that the data contains Contries where the Continents has the same name, like "Asia" or "North America".
+-- Or Groups like "Europe", "World" when looking at "location".
+-- I'll fix that by doing WHERE Continent IS NOT NULL
+-- Also, Looking for Death_Percentage
+
+SELECT
+location,
+-- date,
+population,
+-- total_cases,
+-- total_deaths,
+MAX(cast(total_deaths as int)) as Death_Percentage,
+-- MAX((total_deaths/population))*100 as Death_Percentage_of_total_pop
+FROM`my-project-04082023.Case_Study_4.Covid_Deaths`
+WHERE continent IS NOT NULL
+GROUP BY location, population
+ORDER BY Death_Percentage DESC
+
+-- Result: United States with Death_Percentage at 576.232
+
+-- Now let's actually look at the same data, but for Continents
+
+SELECT
+continent,
+-- population,
+-- date,
+-- total_cases,
+-- total_deaths,
+MAX(cast(total_deaths as int)) as Death_Percentage,
+-- MAX((total_deaths/population))*100 as Death_Percentage_of_total_pop
+FROM`my-project-04082023.Case_Study_4.Covid_Deaths`
+WHERE continent IS NOT NULL
+GROUP BY continent
+ORDER BY Death_Percentage DESC
+
+-- Result: North America with the highest Death Count. but it had the same number as just the United States?
+-- Let's visualize it with Null's on the Continent
+
+SELECT
+-- continent,
+location,
+-- population,
+-- date,
+-- total_cases,
+-- total_deaths,
+MAX(cast(total_deaths as int)) as Death_Percentage,
+-- MAX((total_deaths/population))*100 as Death_Percentage_of_total_pop
+FROM`my-project-04082023.Case_Study_4.Covid_Deaths`
+WHERE continent IS NULL
+GROUP BY location
+ORDER BY Death_Percentage DESC
+
+-- Now it's corrected.
+-- Now let's look at these scripts as future tableau Data Viz
+-- Global Numbers, on this one We'll be looking a the SUM of cases throught the date column. Meaning at the last record, how many people got infected?
+
+SELECT
+SUM(new_cases) as Total_Cases_that_day,
+-- continent,
+-- location,
+-- population,
+date,
+-- total_cases,
+-- total_deaths,
+-- (total_deaths/total_cases)*100 as Death_Percentage,
+-- MAX((total_deaths/population))*100 as Death_Percentage_of_total_pop
+FROM`my-project-04082023.Case_Study_4.Covid_Deaths`
+WHERE continent IS NOT NULL
+-- GROUP BY location
+GROUP BY date
+ORDER BY 1,2
+
+-- Result: from 2020-01-01 to 2021-04-28, 905992 people got infected with COVID.
+
+-- New_deaths was a Data Type Float, so some scripts weren't working properly. Therefore, for the next analysis, I need to make it CAST INT.
+
+SELECT
+SUM(new_cases) as Total_Cases_that_day,
+SUM(CAST(new_deaths as int)) as Total_Deaths_That_Day,
+-- continent,
+-- location,
+-- population,
+date,
+-- total_cases,
+-- total_deaths,
+-- (total_deaths/total_cases)*100 as Death_Percentage,
+-- MAX((total_deaths/population))*100 as Death_Percentage_of_total_pop
+FROM`my-project-04082023.Case_Study_4.Covid_Deaths`
+WHERE continent IS NOT NULL
+-- GROUP BY location
+GROUP BY date
+ORDER BY 1,2
+
+-- Let's add the Death Percentage for the Entire World.
+
+SELECT
+SUM(new_cases) as Total_Cases_that_day,
+SUM(CAST(new_deaths as int)) as Total_Deaths_that_day,
+SUM(CAST(new_deaths as int))/SUM(new_cases)*100 as Daily_Mortality_rate,
+-- continent,
+-- location,
+-- population,
+date,
+-- total_cases,
+-- total_deaths,
+-- (total_deaths/total_cases)*100 as Death_Percentage,
+-- MAX((total_deaths/population))*100 as Death_Percentage_of_total_pop
+FROM `my-project-04082023.Case_Study_4.Covid_Deaths`
+WHERE continent IS NOT NULL
+-- GROUP BY location
+GROUP BY date
+ORDER BY 1,2
+
+-- Total Cases, ever
+
+SELECT
+SUM(new_cases) as Total_Cases_that_day,
+SUM(CAST(new_deaths as int)) as Total_Deaths_that_day,
+SUM(CAST(new_deaths as int))/SUM(new_cases)*100 as Daily_Mortality_rate,
+-- continent,
+-- location,
+-- population,
+-- date,
+-- total_cases,
+-- total_deaths,
+-- (total_deaths/total_cases)*100 as Death_Percentage,
+-- MAX((total_deaths/population))*100 as Death_Percentage_of_total_pop
+FROM `my-project-04082023.Case_Study_4.Covid_Deaths`
+WHERE continent IS NOT NULL
+-- GROUP BY location
+-- GROUP BY date
+ORDER BY 1,2
+
+-- Result: 1.550.744.977 Total_Cases, 3.180.206 Total_Deaths, 2.11% Mortality_Rate
+
+-- Looking at total Population vs Vaccinations
+
+SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
+FROM `my-project-04082023.Case_Study_4.Covid_Deaths` as dea
+JOIN `my-project-04082023.Case_Study_4.Covid_Vaccinations` as vac
+ON dea.location = vac.location
+AND dea.date = vac.date
+WHERE dea.continent IS NOT NULL
+ORDER BY 2,3
+
+-- Rolling count on vaccinations
+
+SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations,
+SUM(CAST(vac.new_vaccinations as int)) OVER (partition by dea.location) as Total_Vaccinations_Per_Contry_SUM_Rollout
+FROM `my-project-04082023.Case_Study_4.Covid_Deaths` as dea
+JOIN `my-project-04082023.Case_Study_4.Covid_Vaccinations` as vac
+ON dea.location = vac.location
+AND dea.date = vac.date
+WHERE dea.continent IS NOT NULL
+ORDER BY 2,3
+
+-- If we look at Albania, for ex. Ababina. It would look like Albania always had 347.702 people vaccinated. Which would be strange, they need time to vaccinate people.
+-- That's beacuse I partioned it by dea.location and the query did the sum of all the days for that location.
+-- But I want it to be a rollingn count.
+
+SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations,
+SUM(CAST(vac.new_vaccinations as int)) OVER (partition by dea.location ORDER BY dea.location, dea.date) as Total_Vaccinations_Per_Contry_SUM_Rollout
+FROM `my-project-04082023.Case_Study_4.Covid_Deaths` as dea
+JOIN `my-project-04082023.Case_Study_4.Covid_Vaccinations` as vac
+ON dea.location = vac.location
+AND dea.date = vac.date
+WHERE dea.continent IS NOT NULL
+ORDER BY 2,3
+
+-- now let's look at Total Population vs Vaccinations. Using CTE. "Total_Vaccinations_Per_Contry_SUM_Rollout"
+
+WITH PopvsVac AS (
+    SELECT
+        dea.continent,
+        dea.location,
+        dea.date,
+        dea.population,
+        vac.new_vaccinations,
+        SUM(CAST(vac.new_vaccinations AS INT64)) OVER (PARTITION BY dea.location ORDER BY dea.location, dea.date) AS Rolling_people_vaccinations
+    FROM `my-project-04082023.Case_Study_4.Covid_Deaths` AS dea
+    JOIN `my-project-04082023.Case_Study_4.Covid_Vaccinations` AS vac
+    ON dea.location = vac.location
+    AND dea.date = vac.date
+    WHERE dea.continent IS NOT NULL
+)
+SELECT *
+FROM PopvsVac;
+
+
+-- For some reason I can't get this code to work.. I don't know if it's a "Big Query problem.." it just says "tracking Error" I've tried Chatgpt and It also doens't seem to know.
+-- Later fixed. it was mostly due to capital letters...
+
+-- The next code will not work becasue BigQuery doesn't work with neither DROP nor CREATE databases. And as this was just another way of getting to the same result, I won't be using it. 
+-- Using Temp Table to perform Calculation on Partition By in previous query
+
+WITH PopvsVac AS (
+    SELECT
+        dea.continent,
+        dea.location,
+        dea.date,
+        dea.population,
+        vac.new_vaccinations,
+        SUM(CAST(vac.new_vaccinations AS INT64)) OVER (PARTITION BY dea.location ORDER BY dea.location, dea.date) AS RollingPeopleVaccinated
+    FROM `my-project-04082023.Case_Study_4.Covid_Deaths` AS dea
+    JOIN `my-project-04082023.Case_Study_4.Covid_Vaccinations` AS vac
+    ON dea.location = vac.location
+    AND dea.date = vac.date
+    WHERE dea.continent IS NOT NULL
+)
+SELECT
+    *,
+    (RollingPeopleVaccinated / population) * 100 AS VaccinationPercentage
+FROM PopvsVac;
+
+-- Creating View to store data for later visualizations
+
+CREATE 
+OR REPLACE VIEW `my-project-04082023.Case_Study_4.PercentPopulationVaccinated` AS 
+SELECT 
+  dea.continent, 
+  dea.location, 
+  dea.date, 
+  dea.population, 
+  vac.new_vaccinations, 
+  SUM(
+    CAST(vac.new_vaccinations AS INT64)
+  ) OVER (
+    PARTITION BY dea.location 
+    ORDER BY 
+      dea.location, 
+      dea.date
+  ) AS RollingPeopleVaccinated 
+FROM 
+  `my-project-04082023.Case_Study_4.Covid_Deaths` AS dea 
+  JOIN `my-project-04082023.Case_Study_4.Covid_Vaccinations` AS vac ON dea.location = vac.location 
+  AND dea.date = vac.date 
+WHERE 
+  dea.continent IS NOT NULL;
